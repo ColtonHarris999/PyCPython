@@ -8,7 +8,10 @@ the two are equivalent.
 """
 
 import os
+import sys
 import unicodedata
+
+from ..marshal_writer import intern_identifier
 
 from .. import tokens as T
 from .. import pyast as ast
@@ -461,7 +464,7 @@ class Parser:
         if id_ in ('None', 'True', 'False'):
             self.error_indicator = 1
             raise ValueError("identifier field can't represent '%s' constant" % id_)
-        return id_
+        return intern_identifier(id_)
 
     def _name_from_token(self, t):
         if t is None:

@@ -81,3 +81,23 @@ def emit_syntax_warning(msg, filename, lineno, col_offset, end_lineno, end_col_o
         raise make_syntax_error(msg, filename, lineno, col_offset, end_lineno,
                                 end_col_offset)
     return 0
+
+
+def raise_syntax_error_full(msg, filename, loc):
+    """_PyErr_RaiseSyntaxError as used by the compiler (compile.c): the
+    SyntaxError carries the full ``(msg, (filename, lineno, offset, text,
+    end_lineno, end_offset))`` args tuple, with 1-based columns."""
+    lineno = loc.lineno
+    text = _program_line(filename, lineno) if lineno and lineno > 0 else None
+    raise SyntaxError(msg, (filename, lineno, loc.col_offset + 1, text,
+                            loc.end_lineno, loc.end_col_offset + 1))
+
+
+def emit_syntax_warning_full(msg, filename, loc):
+    """_PyErr_EmitSyntaxWarning: emit a SyntaxWarning; when warnings are
+    errors the SyntaxWarning is replaced by a SyntaxError with full args."""
+    try:
+        warnings.warn_explicit(msg, SyntaxWarning, filename, loc.lineno)
+    except SyntaxWarning:
+        raise_syntax_error_full(msg, filename, loc)
+    return 0
