@@ -19,6 +19,7 @@ from .errors import (SourceLocation, NO_LOCATION, NEXT_LOCATION,
 from .future import CO_FUTURE_ANNOTATIONS, get_docstring
 from .instrseq import InstructionSequence, NO_LABEL
 from .unparse import expr_as_unicode
+from .marshal_writer import ConstCache
 
 # --- constants ---------------------------------------------------------
 
@@ -282,6 +283,7 @@ class CodeUnitMetadata:
         self.u_posonlyargcount = 0
         self.u_kwonlyargcount = 0
         self.u_firstlineno = 0
+        self.u_fresh_localsplusnames = False
 
 
 class FBlockInfo:
@@ -473,7 +475,7 @@ class Compiler:
         from . import future as future_mod
         from . import ast_preprocess
         self.c_filename = filename
-        self.c_const_cache = {}
+        self.c_const_cache = ConstCache()
         self.c_stack = []
         self.u = None
         self.c_interactive = 0
@@ -561,13 +563,24 @@ class Compiler:
         arg = dict_add_obj(d, o)
         self.addop_i(loc, opcode, arg)
 
+    def metadata_dict(self, kind):
+        umd = self.u.u_metadata
+        if kind == 'names':
+            return umd.u_names
+        if kind == 'varnames':
+            return umd.u_varnames
+        if kind == 'cellvars':
+            return umd.u_cellvars
+        if kind == 'freevars':
+            return umd.u_freevars
+        raise SystemError("unknown metadata dict %r" % kind)
+
     def addop_n(self, loc, opcode, o, kind):
         assert not op.has_const(opcode)
-        d = getattr(self.u.u_metadata, 'u_' + kind)
-        self.addop_o(loc, opcode, d, o)
+        self.addop_o(loc, opcode, self.metadata_dict(kind), o)
 
     def addop_name(self, loc, opcode, o, kind='names'):
-        d = getattr(self.u.u_metadata, 'u_' + kind)
+        d = self.metadata_dict(kind)
         mangled = self.maybe_mangle_name(o)
         arg = dict_add_obj(d, mangled)
         if opcode == LOAD_ATTR:
@@ -1046,6 +1059,7 @@ class Compiler:
             assert next(iter(varnames)) == ".format"
             self.u.u_metadata.u_varnames = {("format" if k == ".format" else k): v
                                             for k, v in varnames.items()}
+            self.u.u_metadata.u_fresh_localsplusnames = True
             co = self.optimize_and_assemble(1)
         except BaseException:
             self.exit_scope()

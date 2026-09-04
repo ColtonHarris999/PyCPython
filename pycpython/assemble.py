@@ -325,6 +325,12 @@ def makecode(umd, a, const_cache, constslist, maxdepth, nlocalsplus, code_flags,
     lp_names, lp_kinds = compute_localsplus_info(umd, nlocalsplus, code_flags)
     localsplusnames = tuple(lp_names)
     localsplusnames = const_cache_merge_one(const_cache, localsplusnames)
+    if umd.u_fresh_localsplusnames:
+        # codegen_leave_annotations_scope builds a brand new (unshared)
+        # localsplusnames tuple after assembling; reproduce that identity.
+        localsplusnames = tuple(list(localsplusnames))
+        if len(localsplusnames) == 0:
+            localsplusnames = ()
     name = umd.u_name
     if umd.u_qualname is None or umd.u_qualname is umd.u_name:
         qualname = name
@@ -347,9 +353,8 @@ def makecode(umd, a, const_cache, constslist, maxdepth, nlocalsplus, code_flags,
         firstlineno=umd.u_firstlineno,
         linetable=a.linetable_bytes,
         exceptiontable=a.except_table_bytes,
-        name_interned=not name.startswith("<generic parameters of "),
     )
-    return build_code(spec)
+    return build_code(spec, const_cache)
 
 
 def resolve_jump_offsets(instrs):

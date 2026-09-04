@@ -197,10 +197,12 @@ def _optimize_format(node, fmt, elts):
 
 def _copy_node(to, frm):
     to.__class__ = type(frm)
+    src = frm.__dict__
+    dst = to.__dict__
     for f in frm._fields:
-        setattr(to, f, getattr(frm, f))
+        dst[f] = src[f]
     for a in frm._attributes:
-        setattr(to, a, getattr(frm, a))
+        dst[a] = src[a]
 
 
 def _fold_binop(node, state):

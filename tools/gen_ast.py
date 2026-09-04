@@ -80,27 +80,29 @@ class AST:
             raise TypeError("%s constructor takes at most %d positional argument%s"
                             % (type(self).__name__, len(names),
                                "" if len(names) == 1 else "s"))
+        d = self.__dict__
         for name, value in zip(names, args):
             if value is None and name in self._list_fields:
                 value = []
-            setattr(self, name, value)
+            d[name] = value
         for name, value in kwargs.items():
             if value is None and name in self._list_fields:
                 value = []
-            setattr(self, name, value)
+            d[name] = value
         for name in names[len(args):]:
             if name not in kwargs:
                 if name in self._list_fields:
-                    setattr(self, name, [])
+                    d[name] = []
                 else:
-                    setattr(self, name, None)
+                    d[name] = None
 
     _defaults = {}
     _list_fields = frozenset()
 
     def __repr__(self):
+        d = self.__dict__
         return "%s(%s)" % (type(self).__name__,
-                           ", ".join("%s=%r" % (f, getattr(self, f, None)) for f in self._fields))
+                           ", ".join("%s=%r" % (f, d.get(f)) for f in self._fields))
 
 
 class expr_context(AST):

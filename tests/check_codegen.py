@@ -13,6 +13,7 @@ import os
 import io
 import dis
 import marshal
+import struct
 import traceback
 import warnings
 
@@ -35,10 +36,10 @@ def const_key(o):
         return (t, tuple(const_key(x) for x in o))
     if t is frozenset:
         return (t, frozenset(const_key(x) for x in o))
-    if t is float and o == 0.0:
-        return (t, o, str(o).startswith('-'))
+    if t is float:
+        return (t, struct.pack('<d', o))
     if t is complex:
-        return (t, o, str(o.real).startswith('-'), str(o.imag).startswith('-'))
+        return (t, struct.pack('<dd', o.real, o.imag))
     if t is slice:
         return (t, const_key(o.start), const_key(o.stop), const_key(o.step))
     return (t, o)
