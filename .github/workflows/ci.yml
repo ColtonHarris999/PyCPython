@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the pinned oracle interpreter (CPython 3.14.7)
+        uses: astral-sh/setup-uv@v5
+      - run: uv python install 3.14.7
+      - name: Lint the shipped package for eval/exec/compile references
+        run: uv run --python 3.14.7 --no-project python tools/lint_forbidden.py
+      - name: Fetch the CPython 3.14.7 source tree (test corpus)
+        run: git clone --depth 1 --branch v3.14.7 https://github.com/python/cpython.git /tmp/cpython
+      - name: Run the differential test suite
+        run: uv run --python 3.14.7 --no-project python tests/run_all.py --cpython /tmp/cpython

@@ -1,0 +1,5 @@
+try:
+    x
+except:
+    y
+

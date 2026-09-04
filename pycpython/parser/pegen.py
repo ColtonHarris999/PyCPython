@@ -329,8 +329,9 @@ class Parser:
             self.tokenizer_error()
         return 0
 
-    def raise_decode_error(self):
-        exc = self.tok.exc
+    def raise_decode_error(self, exc=None):
+        if exc is None:
+            exc = self.tok.exc
         if isinstance(exc, UnicodeError):
             errtype = "unicode error"
         elif isinstance(exc, ValueError):
@@ -1200,9 +1201,8 @@ class Parser:
         is_raw = is_raw or (92 not in bstr)
         try:
             s = string_parser.decode_string(self, is_raw, bstr, token)
-        except string_parser.DecodeError as e:
-            self.tok.exc = e.exc
-            self.raise_decode_error()
+        except (string_parser.DecodeError, UnicodeError, ValueError) as e:
+            self.raise_decode_error(e.exc if isinstance(e, string_parser.DecodeError) else e)
         return ast.Constant(s, None, constant.lineno, constant.col_offset,
                             constant.end_lineno, constant.end_col_offset)
 
@@ -1244,9 +1244,11 @@ class Parser:
             is_raw = self.tok.mode().raw
         try:
             s = string_parser.decode_string(self, is_raw, bstr, tok)
-        except string_parser.DecodeError as e:
+        except (string_parser.DecodeError, UnicodeError, ValueError) as e:
+            # _PyPegen_decoded_constant_from_token does not convert the
+            # error: the raw UnicodeError/ValueError propagates.
             self.error_indicator = 1
-            raise e.exc
+            raise (e.exc if isinstance(e, string_parser.DecodeError) else e)
         return ast.Constant(s, None, tok.lineno, tok.col_offset, tok.end_lineno,
                             tok.end_col_offset)
 
@@ -1258,9 +1260,8 @@ class Parser:
     def constant_from_string(self, tok):
         try:
             s = string_parser.parse_string(self, tok)
-        except string_parser.DecodeError as e:
-            self.tok.exc = e.exc
-            self.raise_decode_error()
+        except (string_parser.DecodeError, UnicodeError, ValueError) as e:
+            self.raise_decode_error(e.exc if isinstance(e, string_parser.DecodeError) else e)
         kind = None
         if tok.bytes[:1] == b'u':
             kind = self.new_identifier(b"u")

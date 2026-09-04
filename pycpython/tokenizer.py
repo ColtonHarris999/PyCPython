@@ -260,13 +260,17 @@ def _valid_utf8(s, i):
 
 
 def byte_offset_to_character_offset(line_bytes, col_offset):
-    """Port of _PyPegen_byte_offset_to_character_offset_raw."""
+    """_PyPegen_byte_offset_to_character_offset.  The C code decodes
+    ``col_offset`` bytes of the NUL-terminated UTF-8 line buffer, so an
+    offset one past the end of the line includes the terminator (which
+    counts as a character)."""
     n = len(line_bytes)
     if col_offset > n + 1:
         col_offset = n + 1
     if col_offset < 0:
         col_offset = 0
-    return len(line_bytes[:col_offset].decode('utf-8', 'replace'))
+    data = bytes(line_bytes) + b'\x00'
+    return len(data[:col_offset].decode('utf-8', 'replace'))
 
 
 def byte_offset_to_character_offset_line(line_bytes, col_offset, end_col_offset):

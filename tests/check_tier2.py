@@ -21,8 +21,8 @@ def run_worker(which, files, mode, dump_dir):
     results = {}
     for line in p.stdout.splitlines():
         parts = line.split('\t')
-        if len(parts) == 4:
-            results[parts[0]] = (parts[1], parts[2], int(parts[3]))
+        if len(parts) == 5:
+            results[parts[0]] = (parts[1], parts[2], int(parts[3]), parts[4])
     if p.returncode != 0:
         sys.stderr.write(p.stderr[-2000:])
     return results
@@ -54,11 +54,15 @@ def main(argv):
             status = 'missing'
         elif r == m:
             status = 'tier2' if r[0] == 'ok' else ('exc-ok' if r[0].startswith('exc') else r[0])
+        elif r[0] == 'ok' and m[0] == 'ok' and r[3] == m[3]:
+            # equal after a marshal round trip: only reference flags on
+            # immortal singletons differ (see DEVIATIONS.md)
+            status = 'tier2-roundtrip'
         else:
             status = 'mismatch'
         counts[status] = counts.get(status, 0) + 1
-        if status in ('tier2', 'exc-ok'):
-            if verbose:
+        if status in ('tier2', 'exc-ok', 'tier2-roundtrip'):
+            if verbose or status == 'tier2-roundtrip':
                 print(status, fn)
         else:
             print(status, fn, 'mine=%r' % (m,), 'ref=%r' % (r,))

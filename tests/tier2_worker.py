@@ -37,7 +37,7 @@ def main():
             with open(fn, 'rb') as f:
                 src = f.read()
         except OSError as e:
-            out.write("%s\tioerror\t%s\t0\n" % (fn, e))
+            out.write("%s\tioerror\t%s\t0\t-\n" % (fn, e))
             continue
         try:
             with warnings.catch_warnings():
@@ -48,21 +48,29 @@ def main():
                     co = compile_source(src, fn, mode, 0, True, -1)
         except (SyntaxError, ValueError, TypeError, RecursionError, MemoryError) as e:
             key = hashlib.sha256(repr((type(e).__name__, e.args)).encode()).hexdigest()[:16]
-            out.write("%s\texc:%s\t%s\t0\n" % (fn, type(e).__name__, key))
+            out.write("%s\texc:%s\t%s\t0\t%s\n" % (fn, type(e).__name__, key, key))
             out.flush()
             continue
         except Exception:
-            out.write("%s\terror\t%s\t0\n" % (fn, traceback.format_exc().splitlines()[-1]))
+            out.write("%s\terror\t%s\t0\t-\n" % (fn, traceback.format_exc().splitlines()[-1]))
             out.flush()
             continue
         fname = co.co_filename  # keep an extra reference (see check_codegen)
         data = marshal.dumps(co)
         del fname
         digest = hashlib.sha256(data).hexdigest()
+        # Normalized form: after a marshal round trip every object is freshly
+        # created by marshal.loads, so refcount-dependent reference flags on
+        # immortal singletons (single-byte bytes objects) no longer differ.
+        co2 = marshal.loads(data)
+        fname = co2.co_filename
+        data2 = marshal.dumps(co2)
+        del fname
+        digest2 = hashlib.sha256(data2).hexdigest()
         if dump_dir:
             with open(os.path.join(dump_dir, digest[:16] + '.' + which), 'wb') as f:
                 f.write(data)
-        out.write("%s\tok\t%s\t%d\n" % (fn, digest, len(data)))
+        out.write("%s\tok\t%s\t%d\t%s\n" % (fn, digest, len(data), digest2))
         out.flush()
 
 
