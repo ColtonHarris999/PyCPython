@@ -8,7 +8,7 @@ import traceback
 import warnings
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from pycpython import parser as my_parser
+from pycpython.compile import parse_to_ast
 from astcompat import to_stdlib
 
 
@@ -21,7 +21,7 @@ def compare_one(src, filename, mode, positions=True):
     except Exception as e:
         ref_exc = e
     try:
-        mine = to_stdlib(my_parser.parse(src, filename, mode))
+        mine = to_stdlib(parse_to_ast(src, filename, mode))
     except Exception as e:
         mine_exc = e
     if ref_exc is not None or mine_exc is not None:
@@ -63,6 +63,7 @@ def first_diff(a, b, positions, path='root'):
 
 
 def main(paths):
+    sys.setrecursionlimit(20000)
     files = []
     for p in paths:
         if os.path.isdir(p):
@@ -86,8 +87,9 @@ def main(paths):
             fail += 1
             print("FAIL", f, msg)
             sys.stdout.flush()
-    print("ok=%d fail=%d" % (ok, fail))
+    print("summary: ok=%d fail=%d" % (ok, fail))
+    return 1 if fail else 0
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    sys.exit(main(sys.argv[1:]))

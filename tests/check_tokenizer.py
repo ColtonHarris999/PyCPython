@@ -69,8 +69,9 @@ def main(paths):
         else:
             fail += 1
             print("FAIL", f, msg)
-    print("ok=%d fail=%d" % (ok, fail))
+    print("summary: ok=%d fail=%d" % (ok, fail))
+    return 1 if fail else 0
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    sys.exit(main(sys.argv[1:]))

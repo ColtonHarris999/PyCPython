@@ -787,6 +787,12 @@ class Parser:
                     pending = e
                     if not isinstance(e, SyntaxError):
                         raise
+                except (AttributeError, TypeError):
+                    # An action was handed a dummy node produced by an
+                    # action-less invalid_* alternative.  The C parser reads
+                    # garbage in that situation and its result is discarded;
+                    # fall through to the generic error at the last token.
+                    pass
             exc = self._set_syntax_error(last_token, pending)
             if isinstance(exc, SyntaxError):
                 self._set_syntax_error_metadata(exc)
@@ -966,6 +972,11 @@ class Parser:
         return AugOperator(kind)
 
     def function_def_decorators(self, decorators, function_def):
+        if function_def is _DUMMY_NAME:
+            # error pass: invalid_def_raw's action-less alternative matched
+            # and produced the dummy name; the C action reads garbage from
+            # it and parsing carries on (its result is discarded anyway).
+            return function_def
         if isinstance(function_def, ast.AsyncFunctionDef):
             return ast.AsyncFunctionDef(
                 function_def.name, function_def.args, function_def.body, decorators,

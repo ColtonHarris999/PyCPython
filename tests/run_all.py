@@ -111,7 +111,7 @@ def main(argv):
                            os.path.join(HERE, "cases", "single")],
           {"tier2", "exc-ok", "tier2-roundtrip"})
     stage("fuzz", [py, fuzz, "--iterations", "300" if not full else "3000"] + corpus[:8],
-          {"ok"})
+          {"ok", "exc-ok", "tier1", "tier2"})
 
     if failures:
         print("FAILURES:", failures)
