@@ -62,7 +62,7 @@ every fifth one also in mode `single`.
 |---|---|
 | `--iterations 400 --seed 7` | 480 checks, 0 mismatches (172 byte-exact, 190 Tier 1 with in-process marshal differences caused by interned-string state, 118 identical exceptions) |
 | `--iterations 300` on 8 Lib files (CI quick run) | 246 checks, 0 mismatches |
-| `--iterations 3000 --seed 11` on 4 Lib files | see `tests/run_all.py --full` output; 0 mismatches at the time of writing |
+| `--iterations 3000 --seed 11` on 4 Lib files | 2295 checks, 0 mismatches (660 byte-exact, 555 Tier 1, 1080 identical exceptions) |
 
 Bugs found by fuzzing and fixed: a crash in the parser's error-recovery
 pass when the action-less alternative of `invalid_def_raw` hands a dummy
